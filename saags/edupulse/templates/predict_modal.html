@@ -1,0 +1,129 @@
+<!-- Prediction Modal -->
+<div class="modal fade" id="predictModal" tabindex="-1" aria-labelledby="predictModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="predictModalLabel">Dropout Risk Prediction</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="modalPredictionForm" aria-label="Modal dropout risk prediction form">
+                    {% if csrf_token is defined %}
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {% else %}
+                    <input type="hidden" name="csrf_token" value="demo-token">
+                    {% endif %}
+                    <input type="hidden" id="modal_student_id" name="student_id" value="">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="modal_attendance" class="form-label">Attendance Percentage (50-100)</label>
+                            <input type="number" class="form-control" id="modal_attendance" name="attendance" 
+                                   min="50" max="100" step="0.1" value="85" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="modal_assignment_score" class="form-label">Assignment Score (0-100)</label>
+                            <input type="number" class="form-control" id="modal_assignment_score" name="assignment_score" 
+                                   min="0" max="100" step="0.1" value="75" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="modal_test_score" class="form-label">Test Score (0-100)</label>
+                            <input type="number" class="form-control" id="modal_test_score" name="test_score" 
+                                   min="0" max="100" step="0.1" value="70" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="modal_behavior_score" class="form-label">Behavior Score (0-10)</label>
+                            <input type="number" class="form-control" id="modal_behavior_score" name="behavior_score" 
+                                   min="0" max="10" step="0.1" value="7" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="modal_sentiment_text" class="form-label">Student Feedback (Optional)</label>
+                        <textarea class="form-control" id="modal_sentiment_text" name="sentiment_text" rows="3"></textarea>
+                    </div>
+                </form>
+                
+                <div id="modalPredictionResult" class="mt-4" aria-live="polite">
+                    <!-- Prediction results will be displayed here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="modalPredictButton">
+                    <i class="fas fa-calculator me-2"></i>Predict
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize modal prediction button
+        const modalPredictButton = document.getElementById('modalPredictButton');
+        if (modalPredictButton) {
+            modalPredictButton.addEventListener('click', function() {
+                const form = document.getElementById('modalPredictionForm');
+                const formData = new FormData(form);
+                
+                // Disable button and show loading state
+                this.disabled = true;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+                
+                // Get CSRF token
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
+                // Submit form
+                fetch('/predict', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    }
+                })
+                .then(response => response.json())
+                .then(result => {
+                    // Reset button state
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-calculator me-2"></i>Predict';
+                    
+                    // Update UI with prediction result
+                    const resultContainer = document.getElementById('modalPredictionResult');
+                    
+                    // Determine risk class for styling
+                    let riskClass = 'success';
+                    if (result.risk_level === 'Medium') {
+                        riskClass = 'warning';
+                    } else if (result.risk_level === 'High') {
+                        riskClass = 'danger';
+                    }
+                    
+                    // Update result container
+                    resultContainer.innerHTML = `
+                        <div class="alert alert-${riskClass}">
+                            <h4 class="alert-heading">Risk Level: ${result.risk_level}</h4>
+                            <p class="mb-0">Risk Percentage: ${result.risk_percentage}%</p>
+                        </div>
+                    `;
+                    
+                    // Show success toast
+                    showToast('Prediction Complete', 'Dropout risk prediction has been calculated successfully.', 'success');
+                })
+                .catch(error => {
+                    console.error('Prediction error:', error);
+                    
+                    // Reset button state
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-calculator me-2"></i>Predict';
+                    
+                    // Show error toast
+                    showToast('Prediction Error', 'An error occurred during prediction. Please try again.', 'danger');
+                });
+            });
+        }
+    });
+</script>

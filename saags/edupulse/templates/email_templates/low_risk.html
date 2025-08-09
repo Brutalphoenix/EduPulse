@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Progress Update - EduPulse</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #28a745;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #0d6efd;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .risk-indicator {
+            font-size: 24px;
+            font-weight: bold;
+            color: #28a745;
+            margin: 20px 0;
+        }
+        .progress-section {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Academic Progress Update</h1>
+        </div>
+        <div class="content">
+            <p>Dear Student,</p>
+            <p>We're pleased to share that your academic progress is on track! Based on our assessment, you're currently at a low risk for academic challenges.</p>
+            
+            <div class="risk-indicator">
+                Risk Level: Low ({{ (risk_probability * 100)|round|int }}%)
+            </div>
+            
+            <div class="progress-section">
+                <h3>Your Progress Highlights</h3>
+                <p>You're doing well in your academic journey. Here are some highlights:</p>
+                <ul>
+                    <li>Your attendance is strong</li>
+                    <li>Your assignment submissions are consistent</li>
+                    <li>Your test scores demonstrate good understanding of the material</li>
+                </ul>
+            </div>
+            
+            <h3>Continuing Your Success</h3>
+            <p>To maintain your progress, consider these suggestions:</p>
+            <ul>
+                <li>Set specific goals for each course</li>
+                <li>Create a consistent study schedule</li>
+                <li>Participate actively in class discussions</li>
+                <li>Connect with study groups for collaborative learning</li>
+            </ul>
+            
+            <p>Remember that resources are always available if you need them:</p>
+            <ul>
+                <li>Academic advising for course planning</li>
+                <li>Career services for future planning</li>
+                <li>Library resources for research support</li>
+            </ul>
+            
+            <a href="#" class="btn">View Your Full Progress Report</a>
+        </div>
+        <div class="footer">
+            <p>This is an automated message from EduPulse. Please do not reply to this email.</p>
+            <p>&copy; {% now 'Y' %} EduPulse. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

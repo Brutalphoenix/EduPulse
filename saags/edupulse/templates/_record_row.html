@@ -1,0 +1,41 @@
+{% macro render_record_row(record) %}
+<tr>
+    <td>{{ record.student_id }}</td>
+    <td>{{ record.timestamp|format_datetime }}</td>
+    <td>{{ record.attendance|default('N/A') }}</td>
+    <td>{{ record.assignment_score|default('N/A') }}</td>
+    <td>{{ record.test_score|default('N/A') }}</td>
+    <td>
+        {% if record.risk_level == 'Low' %}
+            <span class="badge bg-success">{{ record.risk_level }} ({{ (record.risk_probability * 100)|round|int }}%)</span>
+        {% elif record.risk_level == 'Medium' %}
+            <span class="badge bg-warning">{{ record.risk_level }} ({{ (record.risk_probability * 100)|round|int }}%)</span>
+        {% elif record.risk_level == 'High' %}
+            <span class="badge bg-danger">{{ record.risk_level }} ({{ (record.risk_probability * 100)|round|int }}%)</span>
+        {% else %}
+            <span class="badge bg-secondary">Unknown</span>
+        {% endif %}
+    </td>
+    <td>
+        <div class="btn-group" role="group" aria-label="Record actions">
+            <button type="button" class="btn btn-sm btn-primary view-record" 
+                    data-record-id="{{ record.student_id }}" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#recordModal"
+                    aria-label="View details for student {{ record.student_id }}">
+                <i class="fas fa-eye"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-warning re-predict" 
+                    data-record-id="{{ record.student_id }}"
+                    aria-label="Re-predict for student {{ record.student_id }}">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-info send-alert" 
+                    data-record-id="{{ record.student_id }}"
+                    aria-label="Send alert for student {{ record.student_id }}">
+                <i class="fas fa-bell"></i>
+            </button>
+        </div>
+    </td>
+</tr>
+{% endmacro %}

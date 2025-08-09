@@ -1,0 +1,653 @@
+{% extends 'layout.html' %}
+
+{% block title %}EduPulse - Student Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Student Dashboard</h5>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Welcome, {{ session.get('name') }}! Track your progress and connect with mentors.</p>
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Student ID:</strong> {{ session.get('student_id', 'S12345') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-8 mb-4 mb-lg-0">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Available Mentors</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if mentors %}
+                            {% for mentor in mentors %}
+                                <div class="col-md-6 mb-4">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="avatar-circle bg-primary text-white me-3">
+                                                    {{ mentor.name[0] }}
+                                                </div>
+                                                <div>
+                                                    <h5 class="card-title mb-0">{{ mentor.name }}</h5>
+                                                    <p class="text-muted mb-0">{{ mentor.specialization }}</p>
+                                                </div>
+                                            </div>
+                                            <p><strong>Experience:</strong> {{ mentor.experience }} years</p>
+                                            <p><strong>Rating:</strong> 
+                                                <span class="text-warning">
+                                                    {% for i in range(5) %}
+                                                        {% if i < mentor.rating|int %}
+                                                            <i class="fas fa-star"></i>
+                                                        {% elif i < mentor.rating and i >= mentor.rating|int %}
+                                                            <i class="fas fa-star-half-alt"></i>
+                                                        {% else %}
+                                                            <i class="far fa-star"></i>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </span>
+                                                {{ mentor.rating }}/5
+                                            </p>
+                                            <p><strong>Hourly Rate:</strong> ${{ mentor.hourly_rate }}</p>
+                                            <p><strong>Availability:</strong> 
+                                                {% for day in mentor.availability %}
+                                                    <span class="badge bg-success">{{ day }}</span>
+                                                {% endfor %}
+                                            </p>
+                                            <button class="btn btn-primary w-100 request-session" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#requestSessionModal"
+                                                    data-mentor-id="{{ mentor.mentor_id }}"
+                                                    data-mentor-name="{{ mentor.name }}"
+                                                    data-hourly-rate="{{ mentor.hourly_rate }}">
+                                                <i class="fas fa-video me-2"></i>Request Session
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    No mentors available at the moment. Please check back later.
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Upcoming Sessions</h5>
+                </div>
+                <div class="card-body">
+                    {% if active_sessions %}
+                        {% for session in active_sessions %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">Session with {{ session.mentor_name }}</h6>
+                                    <p class="card-text">
+                                        <strong>Date:</strong> {{ session.date }}<br>
+                                        <strong>Time:</strong> {{ session.time }}<br>
+                                        <strong>Topic:</strong> {{ session.topic }}<br>
+                                        <strong>Status:</strong> 
+                                        {% if session.status == 'scheduled' %}
+                                            <span class="badge bg-info">Scheduled</span>
+                                        {% elif session.status == 'active' %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% endif %}
+                                    </p>
+                                    <div class="d-grid gap-2">
+                                        <a href="{{ url_for('video_call', session_id=session.session_id) }}" class="btn btn-success btn-sm">
+                                            <i class="fas fa-video me-2"></i>Join Session
+                                        </a>
+                                        <a href="{{ url_for('chat_room', room_id=session.chat_room) }}" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-comments me-2"></i>Chat
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            No upcoming sessions. Request a session with a mentor to get started.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Dropout Risk Assessment</h5>
+                </div>
+                <div class="card-body">
+                    <form id="predictionForm">
+                        <div class="mb-3">
+                            <label for="attendance" class="form-label">Attendance (%)</label>
+                            <input type="number" class="form-control" id="attendance" name="attendance" min="0" max="100" value="85">
+                        </div>
+                        <div class="mb-3">
+                            <label for="assignment_score" class="form-label">Assignment Score</label>
+                            <input type="number" class="form-control" id="assignment_score" name="assignment_score" min="0" max="100" value="75">
+                        </div>
+                        <div class="mb-3">
+                            <label for="test_score" class="form-label">Test Score</label>
+                            <input type="number" class="form-control" id="test_score" name="test_score" min="0" max="100" value="70">
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-calculator me-2"></i>Calculate Risk
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div id="riskResult" class="mt-3" style="display: none;">
+                        <div class="alert alert-warning">
+                            <h6 class="alert-heading">Risk Assessment</h6>
+                            <p class="mb-0">Risk Level: <strong id="riskLevel">Medium</strong></p>
+                            <div class="progress mt-2">
+                                <div id="riskBar" class="progress-bar bg-warning" role="progressbar" style="width: 55%;" aria-valuenow="55" aria-valuemin="0" aria-valuemax="100">55%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Request Session Modal -->
+<div class="modal fade" id="requestSessionModal" tabindex="-1" aria-labelledby="requestSessionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="requestSessionModalLabel">Request Mentorship Session</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="sessionRequestForm">
+                    <input type="hidden" id="mentor_id" name="mentor_id">
+                    
+                    <div class="mb-3">
+                        <label for="mentor_name" class="form-label">Mentor</label>
+                        <input type="text" class="form-control" id="mentor_name" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="date" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="date" name="date" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="time" class="form-label">Time</label>
+                        <input type="time" class="form-control" id="time" name="time" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="duration" class="form-label">Duration (minutes)</label>
+                        <select class="form-select" id="duration" name="duration">
+                            <option value="30">30 minutes</option>
+                            <option value="60" selected>1 hour</option>
+                            <option value="90">1.5 hours</option>
+                            <option value="120">2 hours</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="topic" class="form-label">Topic</label>
+                        <input type="text" class="form-control" id="topic" name="topic" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Estimated Cost</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" class="form-control" id="estimated_cost" readonly>
+                        </div>
+                        <div class="form-text">Based on mentor's hourly rate and session duration.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="submitSessionRequest">
+                    <i class="fas fa-paper-plane me-2"></i>Send Request
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentModalLabel">Payment for Session</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-success mb-4">
+                    <h6 class="alert-heading">Session Request Sent!</h6>
+                    <p class="mb-0">Your request has been sent to the mentor. Once approved, you'll need to complete the payment to confirm your session.</p>
+                </div>
+                
+                <form id="paymentForm">
+                    <input type="hidden" id="session_id" name="session_id">
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Amount</label>
+                                <div class="d-flex">
+                                    <div class="form-check me-3">
+                                        <input class="form-check-input" type="radio" name="currency" id="currencyINR" value="INR" checked>
+                                        <label class="form-check-label" for="currencyINR">
+                                            ₹<span id="payment_amount_inr">0.00</span> INR
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="currency" id="currencyUSD" value="USD">
+                                        <label class="form-check-label" for="currencyUSD">
+                                            $<span id="payment_amount_usd">0.00</span> USD
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Payment Method</label>
+                                <select class="form-select" id="payment_method" name="payment_method">
+                                    <option value="credit_card">Credit/Debit Card</option>
+                                    <option value="upi">UPI</option>
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Credit Card Payment Form -->
+                    <div id="credit_card_form">
+                        <div class="mb-3">
+                            <label for="card_number" class="form-label">Card Number</label>
+                            <input type="text" class="form-control" id="card_number" name="card_number" placeholder="1234 5678 9012 3456">
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="expiry_date" class="form-label">Expiry Date</label>
+                                <input type="text" class="form-control" id="expiry_date" name="expiry_date" placeholder="MM/YY">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="cvv" class="form-label">CVV</label>
+                                <input type="text" class="form-control" id="cvv" name="cvv" placeholder="123">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="card_holder" class="form-label">Card Holder Name</label>
+                            <input type="text" class="form-control" id="card_holder" name="card_holder">
+                        </div>
+                    </div>
+                    
+                    <!-- UPI Payment Form -->
+                    <div id="upi_form" style="display: none;">
+                        <div class="mb-3">
+                            <label for="upi_id" class="form-label">UPI ID</label>
+                            <input type="text" class="form-control" id="upi_id" name="upi_id" placeholder="name@upi">
+                            <div class="form-text">Enter your UPI ID (e.g., name@okaxis, name@ybl)</div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            You will receive a payment request on your UPI app. Please complete the payment within 5 minutes.
+                        </div>
+                    </div>
+                    
+                    <!-- Bank Transfer Form -->
+                    <div id="bank_transfer_form" style="display: none;">
+                        <div class="mb-3">
+                            <label for="bank_account" class="form-label">Account Number</label>
+                            <input type="text" class="form-control" id="bank_account" name="bank_account">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="ifsc_code" class="form-label">IFSC Code</label>
+                            <input type="text" class="form-control" id="ifsc_code" name="ifsc_code">
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Mentor's Bank Details:</strong>
+                            <div id="mentor_payment_details" class="mt-2">
+                                Please wait for the mentor to approve your request and provide payment details.
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="processPayment">
+                    <i class="fas fa-credit-card me-2"></i>Pay Now
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    // Show toast notification
+    function showToast(title, message, type = 'info') {
+        const toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            // Create toast container if it doesn't exist
+            const container = document.createElement('div');
+            container.className = 'toast-container position-fixed top-0 end-0 p-3';
+            document.body.appendChild(container);
+        }
+        
+        const toastEl = document.createElement('div');
+        toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
+        toastEl.setAttribute('role', 'alert');
+        toastEl.setAttribute('aria-live', 'assertive');
+        toastEl.setAttribute('aria-atomic', 'true');
+        
+        const toastContent = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>${title}</strong>: ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        
+        toastEl.innerHTML = toastContent;
+        document.querySelector('.toast-container').appendChild(toastEl);
+        
+        const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+        toast.show();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Request Session Modal
+        const requestButtons = document.querySelectorAll('.request-session');
+        const mentorIdInput = document.getElementById('mentor_id');
+        const mentorNameInput = document.getElementById('mentor_name');
+        const durationSelect = document.getElementById('duration');
+        const estimatedCostInput = document.getElementById('estimated_cost');
+        let hourlyRate = 0;
+        
+        requestButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const mentorId = this.getAttribute('data-mentor-id');
+                const mentorName = this.getAttribute('data-mentor-name');
+                hourlyRate = parseFloat(this.getAttribute('data-hourly-rate'));
+                
+                mentorIdInput.value = mentorId;
+                mentorNameInput.value = mentorName;
+                
+                // Set minimum date to today
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('date').min = today;
+                
+                // Calculate estimated cost
+                calculateEstimatedCost();
+            });
+        });
+        
+        // Calculate estimated cost when duration changes
+        durationSelect.addEventListener('change', calculateEstimatedCost);
+        
+        function calculateEstimatedCost() {
+            const duration = parseInt(durationSelect.value);
+            const cost = (hourlyRate / 60) * duration;
+            estimatedCostInput.value = cost.toFixed(2);
+        }
+        
+        // Submit Session Request
+        const sessionRequestForm = document.getElementById('sessionRequestForm');
+        const submitSessionRequest = document.getElementById('submitSessionRequest');
+        
+        submitSessionRequest.addEventListener('click', function() {
+            // Validate form
+            if (!sessionRequestForm.checkValidity()) {
+                sessionRequestForm.reportValidity();
+                return;
+            }
+            
+            // Disable button and show loading state
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+            
+            // Get form data
+            const formData = new FormData(sessionRequestForm);
+            
+            console.log('Sending mentorship request with form data:', Object.fromEntries(formData));
+            
+            // Send request
+            fetch('/mentorship/request', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                
+                if (data.success) {
+                    // Hide request modal
+                    const requestModal = bootstrap.Modal.getInstance(document.getElementById('requestSessionModal'));
+                    requestModal.hide();
+                    
+                    // Show payment modal
+                    document.getElementById('session_id').value = data.session_id;
+                    document.getElementById('payment_amount_usd').textContent = data.cost_usd.toFixed(2);
+                    document.getElementById('payment_amount_inr').textContent = data.cost_inr.toFixed(2);
+                    
+                    const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
+                    paymentModal.show();
+                    
+                    // Show success message
+                    showToast('Success', 'Mentorship request sent successfully! Waiting for mentor approval.', 'success');
+                } else {
+                    showToast('Error', data.error || 'Failed to send request', 'danger');
+                    
+                    // Reset button state
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Send Request';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Error', 'An error occurred. Please try again.', 'danger');
+                
+                // Reset button state
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Send Request';
+            });
+        });
+        
+        // Payment Method Toggle
+        const paymentMethodSelect = document.getElementById('payment_method');
+        const creditCardForm = document.getElementById('credit_card_form');
+        const upiForm = document.getElementById('upi_form');
+        const bankTransferForm = document.getElementById('bank_transfer_form');
+        
+        paymentMethodSelect.addEventListener('change', function() {
+            // Hide all payment forms
+            creditCardForm.style.display = 'none';
+            upiForm.style.display = 'none';
+            bankTransferForm.style.display = 'none';
+            
+            // Show selected payment form
+            if (this.value === 'credit_card') {
+                creditCardForm.style.display = 'block';
+            } else if (this.value === 'upi') {
+                upiForm.style.display = 'block';
+            } else if (this.value === 'bank_transfer') {
+                bankTransferForm.style.display = 'block';
+            }
+        });
+        
+        // Process Payment
+        const paymentForm = document.getElementById('paymentForm');
+        const processPayment = document.getElementById('processPayment');
+        
+        processPayment.addEventListener('click', function() {
+            // Get selected payment method
+            const paymentMethod = paymentMethodSelect.value;
+            
+            // Validate required fields based on payment method
+            let isValid = true;
+            
+            if (paymentMethod === 'credit_card') {
+                const cardNumber = document.getElementById('card_number').value;
+                const cardHolder = document.getElementById('card_holder').value;
+                const expiryDate = document.getElementById('expiry_date').value;
+                const cvv = document.getElementById('cvv').value;
+                
+                if (!cardNumber || !cardHolder || !expiryDate || !cvv) {
+                    isValid = false;
+                    showToast('Error', 'Please fill in all credit card details', 'danger');
+                }
+            } else if (paymentMethod === 'upi') {
+                const upiId = document.getElementById('upi_id').value;
+                
+                if (!upiId) {
+                    isValid = false;
+                    showToast('Error', 'Please enter your UPI ID', 'danger');
+                }
+            } else if (paymentMethod === 'bank_transfer') {
+                const bankAccount = document.getElementById('bank_account').value;
+                const ifscCode = document.getElementById('ifsc_code').value;
+                
+                if (!bankAccount || !ifscCode) {
+                    isValid = false;
+                    showToast('Error', 'Please enter bank account details', 'danger');
+                }
+            }
+            
+            if (!isValid) {
+                return;
+            }
+            
+            // Disable button and show loading state
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+            
+            // Get form data
+            const formData = new FormData(paymentForm);
+            
+            // Add currency
+            const currency = document.getElementById('currencyINR').checked ? 'INR' : 'USD';
+            formData.set('currency', currency);
+            
+            // Send request
+            fetch('/payment/process', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Hide payment modal
+                    const paymentModal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
+                    paymentModal.hide();
+                    
+                    // Show success message
+                    showToast('Success', 'Payment processed successfully. Your session is confirmed!', 'success');
+                    
+                    // Reload page after a delay
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    showToast('Error', data.error || 'Failed to process payment', 'danger');
+                    
+                    // Reset button state
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-credit-card me-2"></i>Pay Now';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Error', 'An error occurred. Please try again.', 'danger');
+                
+                // Reset button state
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-credit-card me-2"></i>Pay Now';
+            });
+        });
+        
+        // Risk Prediction Form
+        const predictionForm = document.getElementById('predictionForm');
+        const riskResult = document.getElementById('riskResult');
+        const riskLevel = document.getElementById('riskLevel');
+        const riskBar = document.getElementById('riskBar');
+        
+        predictionForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Get form data
+            const attendance = parseFloat(document.getElementById('attendance').value);
+            const assignmentScore = parseFloat(document.getElementById('assignment_score').value);
+            const testScore = parseFloat(document.getElementById('test_score').value);
+            
+            // Send request
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `attendance=${attendance}&assignment_score=${assignmentScore}&test_score=${testScore}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update risk result
+                riskLevel.textContent = data.risk_level;
+                riskBar.style.width = `${data.risk_percentage}%`;
+                riskBar.textContent = `${data.risk_percentage}%`;
+                
+                // Set appropriate color
+                riskBar.className = 'progress-bar';
+                if (data.risk_level === 'Low') {
+                    riskBar.classList.add('bg-success');
+                } else if (data.risk_level === 'Medium') {
+                    riskBar.classList.add('bg-warning');
+                } else {
+                    riskBar.classList.add('bg-danger');
+                }
+                
+                // Show result
+                riskResult.style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Error', 'An error occurred. Please try again.', 'danger');
+            });
+        });
+    });
+</script>
+{% endblock %}
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed top-0 end-0 p-3"></div>
+{% endblock %}

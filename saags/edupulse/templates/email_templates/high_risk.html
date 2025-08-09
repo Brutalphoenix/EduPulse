@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>High Risk Alert - EduPulse</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #dc3545;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #0d6efd;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .risk-indicator {
+            font-size: 24px;
+            font-weight: bold;
+            color: #dc3545;
+            margin: 20px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid #dee2e6;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{% if is_admin %}High Risk Student Alert{% else %}Academic Support Available{% endif %}</h1>
+        </div>
+        <div class="content">
+            {% if is_admin %}
+                <p>Dear Administrator,</p>
+                <p>This is an automated alert to inform you that a student has been identified as <strong>high risk</strong> for dropping out based on our predictive model.</p>
+                
+                <div class="risk-indicator">
+                    Risk Level: High ({{ (risk_probability * 100)|round|int }}%)
+                </div>
+                
+                <h3>Student Information</h3>
+                <table>
+                    <tr>
+                        <th>Student ID</th>
+                        <td>{{ student_id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Risk Level</th>
+                        <td>{{ risk_level }} ({{ (risk_probability * 100)|round|int }}%)</td>
+                    </tr>
+                    <tr>
+                        <th>Alert Generated</th>
+                        <td>{{ now().strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    </tr>
+                </table>
+                
+                <p>Please review this student's record and consider appropriate intervention measures.</p>
+                
+                <a href="#" class="btn">View Student Record</a>
+            {% else %}
+                <p>Dear Student,</p>
+                <p>We're reaching out because our academic support system has identified that you may benefit from additional resources to help you succeed in your studies.</p>
+                
+                <p>Based on your recent academic performance, we'd like to offer you personalized support to help you overcome any challenges you might be facing.</p>
+                
+                <h3>Available Resources</h3>
+                <ul>
+                    <li><strong>Academic Advising:</strong> Schedule a meeting with an academic advisor to discuss your course load and academic plan.</li>
+                    <li><strong>Tutoring Services:</strong> Free tutoring is available for most subjects.</li>
+                    <li><strong>Counseling Services:</strong> Confidential support for personal challenges that may be affecting your studies.</li>
+                    <li><strong>Financial Aid Office:</strong> Information about scholarships and financial assistance.</li>
+                </ul>
+                
+                <p>Your success is important to us. Please don't hesitate to reach out and take advantage of these resources.</p>
+                
+                <a href="#" class="btn">Schedule Support Meeting</a>
+            {% endif %}
+        </div>
+        <div class="footer">
+            <p>This is an automated message from EduPulse. Please do not reply to this email.</p>
+            <p>&copy; {% now 'Y' %} EduPulse. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

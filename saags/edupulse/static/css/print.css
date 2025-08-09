@@ -1,0 +1,170 @@
+/**
+ * EduPulse Print Styles
+ * Styles for printer-friendly output
+ */
+
+/* Hide elements not needed for printing */
+@media print {
+    header,
+    footer,
+    .navbar,
+    .btn,
+    .no-print,
+    .toast-container,
+    form button,
+    .skip-to-content {
+        display: none !important;
+    }
+    
+    /* Ensure white background and black text */
+    body {
+        background-color: white !important;
+        color: black !important;
+        font-size: 12pt;
+        line-height: 1.5;
+        margin: 0;
+        padding: 0;
+    }
+    
+    /* Ensure full width content */
+    .container, 
+    .container-fluid, 
+    .row, 
+    .col, 
+    .col-md-12, 
+    .col-lg-12 {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 0 0 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* Add page breaks before major sections */
+    h1, h2 {
+        page-break-before: always;
+    }
+    
+    /* Prevent page breaks inside elements */
+    p, h3, h4, h5, h6, img, table, figure {
+        page-break-inside: avoid;
+    }
+    
+    /* Ensure links show their URL */
+    a::after {
+        content: " (" attr(href) ")";
+        font-size: 90%;
+        font-style: italic;
+    }
+    
+    /* Ensure internal links don't show URL */
+    a[href^="#"]::after {
+        content: "";
+    }
+    
+    /* Ensure proper table display */
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-bottom: 1cm;
+    }
+    
+    table, th, td {
+        border: 1px solid #ddd;
+    }
+    
+    th, td {
+        padding: 8px;
+        text-align: left;
+    }
+    
+    /* Ensure charts print properly */
+    .chart-container {
+        height: auto !important;
+        page-break-inside: avoid;
+        margin-bottom: 1cm;
+    }
+    
+    /* Ensure cards print properly */
+    .card {
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+        margin-bottom: 1cm;
+        page-break-inside: avoid;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa !important;
+        border-bottom: 1px solid #ddd !important;
+    }
+    
+    /* Ensure proper display of risk levels */
+    .bg-success, .text-success, .border-success {
+        background-color: white !important;
+        color: black !important;
+        border-color: #ddd !important;
+    }
+    
+    .bg-warning, .text-warning, .border-warning {
+        background-color: white !important;
+        color: black !important;
+        border-color: #ddd !important;
+    }
+    
+    .bg-danger, .text-danger, .border-danger {
+        background-color: white !important;
+        color: black !important;
+        border-color: #ddd !important;
+    }
+    
+    /* Add risk level indicators */
+    .bg-success::before, .text-success::before {
+        content: "[Low Risk] ";
+        font-weight: bold;
+    }
+    
+    .bg-warning::before, .text-warning::before {
+        content: "[Medium Risk] ";
+        font-weight: bold;
+    }
+    
+    .bg-danger::before, .text-danger::before {
+        content: "[High Risk] ";
+        font-weight: bold;
+    }
+    
+    /* Ensure progress bars print properly */
+    .progress {
+        border: 1px solid #ddd;
+        height: 20px !important;
+        background-color: white !important;
+    }
+    
+    .progress-bar {
+        background-color: #ddd !important;
+        color: black !important;
+        text-align: center;
+    }
+    
+    /* Add header and footer */
+    @page {
+        margin: 2cm;
+    }
+    
+    /* Add title to the first page */
+    body::before {
+        content: "EduPulse Student Report";
+        display: block;
+        text-align: center;
+        font-size: 24pt;
+        font-weight: bold;
+        margin-bottom: 1cm;
+    }
+    
+    /* Add page numbers */
+    @page {
+        @bottom-right {
+            content: "Page " counter(page) " of " counter(pages);
+        }
+    }
+}

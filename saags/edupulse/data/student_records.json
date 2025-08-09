@@ -1,0 +1,98 @@
+{
+    "S12345": [
+        {
+            "student_id": "S12345",
+            "timestamp": "2023-05-15 14:30:00",
+            "attendance": 85.5,
+            "assignment_score": 78.0,
+            "test_score": 72.5,
+            "risk_level": "Low",
+            "risk_probability": 0.25
+        },
+        {
+            "student_id": "S12345",
+            "timestamp": "2025-08-09 08:17:14",
+            "attendance": 85.0,
+            "assignment_score": 75.0,
+            "test_score": 70.0,
+            "risk_level": "Low",
+            "risk_probability": 0.21
+        },
+        {
+            "student_id": "S12345",
+            "timestamp": "2025-08-09 08:17:14",
+            "attendance": 85.0,
+            "assignment_score": 75.0,
+            "test_score": 70.0,
+            "risk_level": "Low",
+            "risk_probability": 0.21
+        },
+        {
+            "student_id": "S12345",
+            "timestamp": "2025-08-09 19:05:38",
+            "attendance": 1.0,
+            "assignment_score": 11.0,
+            "test_score": 21.0,
+            "risk_level": "High",
+            "risk_probability": 0.92
+        },
+        {
+            "student_id": "S12345",
+            "timestamp": "2025-08-09 19:05:38",
+            "attendance": 1.0,
+            "assignment_score": 11.0,
+            "test_score": 21.0,
+            "risk_level": "High",
+            "risk_probability": 0.92
+        },
+        {
+            "student_id": "S12345",
+            "timestamp": "2025-08-09 19:05:38",
+            "attendance": 1.0,
+            "assignment_score": 11.0,
+            "test_score": 21.0,
+            "risk_level": "High",
+            "risk_probability": 0.92
+        },
+        {
+            "student_id": "S12345",
+            "timestamp": "2025-08-09 19:05:46",
+            "attendance": 0.0,
+            "assignment_score": 0.0,
+            "test_score": 0.0,
+            "risk_level": "High",
+            "risk_probability": 1.0
+        },
+        {
+            "student_id": "S12345",
+            "timestamp": "2025-08-09 19:06:08",
+            "attendance": 100.0,
+            "assignment_score": 100.0,
+            "test_score": 100.0,
+            "risk_level": "Low",
+            "risk_probability": 0.0
+        }
+    ],
+    "S67890": [
+        {
+            "student_id": "S67890",
+            "timestamp": "2023-05-15 15:45:00",
+            "attendance": 65.0,
+            "assignment_score": 58.0,
+            "test_score": 62.0,
+            "risk_level": "Medium",
+            "risk_probability": 0.55
+        }
+    ],
+    "S24680": [
+        {
+            "student_id": "S24680",
+            "timestamp": "2023-05-15 16:20:00",
+            "attendance": 52.0,
+            "assignment_score": 45.0,
+            "test_score": 48.0,
+            "risk_level": "High",
+            "risk_probability": 0.85
+        }
+    ]
+}

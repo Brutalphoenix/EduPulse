@@ -1,0 +1,313 @@
+{% extends 'layout.html' %}
+
+{% block title %}EduPulse - Chat{% endblock %}
+
+{% block styles %}
+<style>
+    .chat-container {
+        height: calc(100vh - 250px);
+        min-height: 400px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+    }
+    
+    .chat-input {
+        margin-top: 1rem;
+    }
+    
+    .message {
+        margin-bottom: 1rem;
+        max-width: 80%;
+    }
+    
+    .message-sent {
+        margin-left: auto;
+        background-color: #0d6efd;
+        color: white;
+    }
+    
+    .message-received {
+        margin-right: auto;
+        background-color: #e9ecef;
+    }
+    
+    .message-system {
+        margin: 0 auto;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        text-align: center;
+        max-width: 60%;
+        font-style: italic;
+        color: #6c757d;
+    }
+    
+    .message-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.25rem;
+        font-size: 0.875rem;
+    }
+    
+    .message-body {
+        word-break: break-word;
+    }
+    
+    .message-time {
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .message-received .message-time {
+        color: #6c757d;
+    }
+    
+    .message-system .message-time {
+        color: #6c757d;
+    }
+    
+    .typing-indicator {
+        display: none;
+        padding: 0.5rem;
+        font-style: italic;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        {% if session.get('role') == 'student' %}
+                            Chat with {{ session_data.mentor_name }}
+                        {% else %}
+                            Chat with {{ session_data.student_name }}
+                        {% endif %}
+                    </h5>
+                    <div>
+                        <a href="{{ url_for('video_call', session_id=session_data.session_id) }}" class="btn btn-light btn-sm">
+                            <i class="fas fa-video me-2"></i>Start Video Call
+                        </a>
+                        {% if session.get('role') == 'student' %}
+                            <a href="{{ url_for('student_dashboard') }}" class="btn btn-light btn-sm ms-2">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('mentor_dashboard') }}" class="btn btn-light btn-sm ms-2">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chatMessages">
+                            {% if messages %}
+                                {% for message in messages %}
+                                    {% if message.user == 'System' %}
+                                        <div class="message message-system p-2 rounded">
+                                            <div class="message-body">{{ message.text }}</div>
+                                            <div class="message-time">{{ message.timestamp }}</div>
+                                        </div>
+                                    {% elif message.user == session.get('name') %}
+                                        <div class="message message-sent p-3 rounded">
+                                            <div class="message-header">
+                                                <span class="message-sender">You</span>
+                                            </div>
+                                            <div class="message-body">{{ message.text }}</div>
+                                            <div class="message-time">{{ message.timestamp }}</div>
+                                        </div>
+                                    {% else %}
+                                        <div class="message message-received p-3 rounded">
+                                            <div class="message-header">
+                                                <span class="message-sender">{{ message.user }}</span>
+                                            </div>
+                                            <div class="message-body">{{ message.text }}</div>
+                                            <div class="message-time">{{ message.timestamp }}</div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <div class="message message-system p-2 rounded">
+                                    <div class="message-body">No messages yet. Start the conversation!</div>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="typing-indicator" id="typingIndicator">
+                            Someone is typing...
+                        </div>
+                        
+                        <div class="chat-input">
+                            <form id="messageForm" class="d-flex">
+                                <input type="text" class="form-control me-2" id="messageInput" placeholder="Type your message..." autocomplete="off">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Session Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Topic:</strong> {{ session_data.topic }}</p>
+                            <p><strong>Date:</strong> {{ session_data.date }}</p>
+                            <p><strong>Time:</strong> {{ session_data.time }}</p>
+                            <p><strong>Duration:</strong> {{ session_data.duration }} minutes</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong> 
+                                {% if session_data.status == 'pending' %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% elif session_data.status == 'scheduled' %}
+                                    <span class="badge bg-info">Scheduled</span>
+                                {% elif session_data.status == 'active' %}
+                                    <span class="badge bg-success">Active</span>
+                                {% elif session_data.status == 'completed' %}
+                                    <span class="badge bg-secondary">Completed</span>
+                                {% elif session_data.status == 'cancelled' %}
+                                    <span class="badge bg-danger">Cancelled</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Session ID:</strong> {{ session_data.session_id }}</p>
+                            {% if session.get('role') == 'student' %}
+                                <p><strong>Mentor:</strong> {{ session_data.mentor_name }}</p>
+                            {% else %}
+                                <p><strong>Student:</strong> {{ session_data.student_name }}</p>
+                            {% endif %}
+                            <p><strong>Cost:</strong> ${{ session_data.cost }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const socket = io();
+        const room = "{{ room }}";
+        const username = "{{ session.get('name') }}";
+        const chatMessages = document.getElementById('chatMessages');
+        const messageForm = document.getElementById('messageForm');
+        const messageInput = document.getElementById('messageInput');
+        const typingIndicator = document.getElementById('typingIndicator');
+        
+        let typingTimeout;
+        
+        // Join chat room
+        socket.emit('join', { room: room });
+        
+        // Handle form submission
+        messageForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const text = messageInput.value.trim();
+            if (text) {
+                // Send message to server
+                socket.emit('message', { room: room, text: text });
+                
+                // Clear input
+                messageInput.value = '';
+                messageInput.focus();
+            }
+        });
+        
+        // Handle typing indicator
+        messageInput.addEventListener('input', function() {
+            // Clear previous timeout
+            clearTimeout(typingTimeout);
+            
+            // Set new timeout
+            typingTimeout = setTimeout(function() {
+                socket.emit('typing', { room: room, isTyping: false });
+            }, 1000);
+            
+            // Emit typing event
+            socket.emit('typing', { room: room, isTyping: true });
+        });
+        
+        // Handle incoming messages
+        socket.on('message', function(message) {
+            // Create message element
+            const messageElement = document.createElement('div');
+            
+            if (message.user === 'System') {
+                messageElement.className = 'message message-system p-2 rounded';
+                messageElement.innerHTML = `
+                    <div class="message-body">${message.text}</div>
+                    <div class="message-time">${message.timestamp}</div>
+                `;
+            } else if (message.user === username) {
+                messageElement.className = 'message message-sent p-3 rounded';
+                messageElement.innerHTML = `
+                    <div class="message-header">
+                        <span class="message-sender">You</span>
+                    </div>
+                    <div class="message-body">${message.text}</div>
+                    <div class="message-time">${message.timestamp}</div>
+                `;
+            } else {
+                messageElement.className = 'message message-received p-3 rounded';
+                messageElement.innerHTML = `
+                    <div class="message-header">
+                        <span class="message-sender">${message.user}</span>
+                    </div>
+                    <div class="message-body">${message.text}</div>
+                    <div class="message-time">${message.timestamp}</div>
+                `;
+            }
+            
+            // Add message to chat
+            chatMessages.appendChild(messageElement);
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+        
+        // Handle typing indicator
+        socket.on('typing', function(data) {
+            if (data.isTyping && data.user !== username) {
+                typingIndicator.textContent = `${data.user} is typing...`;
+                typingIndicator.style.display = 'block';
+            } else {
+                typingIndicator.style.display = 'none';
+            }
+        });
+        
+        // Handle page unload
+        window.addEventListener('beforeunload', function() {
+            socket.emit('leave', { room: room });
+        });
+        
+        // Scroll to bottom on load
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    });
+</script>
+{% endblock %}
+{% endblock %}

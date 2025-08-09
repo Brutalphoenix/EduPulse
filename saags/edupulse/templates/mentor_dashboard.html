@@ -1,0 +1,806 @@
+{% extends 'layout.html' %}
+
+{% block title %}EduPulse - Mentor Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    .avatar-circle {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: bold;
+    }
+    
+    .chart-container {
+        position: relative;
+        margin: auto;
+    }
+    
+    .feature-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+        border-radius: 50%;
+    }
+</style>
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Mentor Dashboard</h5>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Welcome, {{ session.get('name') }}! Manage your mentorship sessions and student interactions.</p>
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Mentor ID:</strong> {{ session.get('mentor_id', 'M12345') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-4 mb-4 mb-lg-0">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Your Profile</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="avatar-circle bg-primary text-white me-3">
+                            {{ session.get('name')[0] }}
+                        </div>
+                        <div>
+                            <h5 class="card-title mb-0">{{ mentor.name }}</h5>
+                            <p class="text-muted mb-0">{{ mentor.specialization }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p><strong>Experience:</strong> {{ mentor.experience }} years</p>
+                        <p><strong>Rating:</strong> 
+                            <span class="text-warning">
+                                {% for i in range(5) %}
+                                    {% if i < mentor.rating|int %}
+                                        <i class="fas fa-star"></i>
+                                    {% elif i < mentor.rating and i >= mentor.rating|int %}
+                                        <i class="fas fa-star-half-alt"></i>
+                                    {% else %}
+                                        <i class="far fa-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
+                            {{ mentor.rating }}/5
+                        </p>
+                        <p><strong>Hourly Rate:</strong> ${{ mentor.hourly_rate }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Availability</h6>
+                        <div>
+                            {% for day in mentor.availability %}
+                                <span class="badge bg-success mb-1">{{ day }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                        <i class="fas fa-edit me-2"></i>Edit Profile
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Analytics Cards -->
+        <div class="col-lg-8">
+            <div class="row mb-4">
+                <div class="col-md-6 mb-4 mb-md-0">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">Earnings Overview</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-3">
+                                <div>
+                                    <h6 class="card-subtitle text-muted">Total Earnings</h6>
+                                    <h3 class="mb-0">$<span id="totalEarnings">0.00</span></h3>
+                                </div>
+                                <div>
+                                    <h6 class="card-subtitle text-muted">This Month</h6>
+                                    <h3 class="mb-0">$<span id="monthlyEarnings">0.00</span></h3>
+                                </div>
+                            </div>
+                            <div class="chart-container" style="height: 200px;">
+                                <canvas id="earningsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">Rating & Reviews</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="display-4 me-3 text-warning">{{ mentor.rating }}</div>
+                                <div>
+                                    <div class="text-warning mb-1">
+                                        {% for i in range(5) %}
+                                            {% if i < mentor.rating|int %}
+                                                <i class="fas fa-star"></i>
+                                            {% elif i < mentor.rating and i >= mentor.rating|int %}
+                                                <i class="fas fa-star-half-alt"></i>
+                                            {% else %}
+                                                <i class="far fa-star"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <div class="text-muted">Based on <span id="reviewCount">0</span> reviews</div>
+                                </div>
+                            </div>
+                            <div class="chart-container" style="height: 200px;">
+                                <canvas id="ratingChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Pending Requests</h5>
+                </div>
+                <div class="card-body">
+                    {% if pending_requests %}
+                        {% for request in pending_requests %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="card-title mb-0">Request from {{ request.student_name }}</h6>
+                                        <span class="badge bg-warning">Pending Approval</span>
+                                    </div>
+                                    <p class="card-text">
+                                        <strong>Date:</strong> {{ request.date }}<br>
+                                        <strong>Time:</strong> {{ request.time }}<br>
+                                        <strong>Duration:</strong> {{ request.duration }} minutes<br>
+                                        <strong>Topic:</strong> {{ request.topic }}<br>
+                                        <strong>Cost:</strong> ${{ request.cost_usd }} (₹{{ request.cost_inr }})
+                                    </p>
+                                    <div class="d-flex mt-3">
+                                        <button class="btn btn-success btn-sm me-2 accept-request" 
+                                                data-session-id="{{ request.session_id }}">
+                                            <i class="fas fa-check me-1"></i>Accept
+                                        </button>
+                                        <button class="btn btn-danger btn-sm reject-request"
+                                                data-session-id="{{ request.session_id }}">
+                                            <i class="fas fa-times me-1"></i>Reject
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            No pending requests at the moment.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Upcoming Sessions</h5>
+                </div>
+                <div class="card-body">
+                    {% if active_sessions %}
+                        {% for session in active_sessions %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="card-title mb-0">Session with {{ session.student_name }}</h6>
+                                        {% if session.status == 'approved' %}
+                                            <span class="badge bg-info">Awaiting Payment</span>
+                                        {% elif session.status == 'scheduled' %}
+                                            <span class="badge bg-success">Scheduled</span>
+                                        {% elif session.status == 'active' %}
+                                            <span class="badge bg-primary">Active</span>
+                                        {% endif %}
+                                    </div>
+                                    <p class="card-text">
+                                        <strong>Date:</strong> {{ session.date }}<br>
+                                        <strong>Time:</strong> {{ session.time }}<br>
+                                        <strong>Duration:</strong> {{ session.duration }} minutes<br>
+                                        <strong>Topic:</strong> {{ session.topic }}<br>
+                                        <strong>Payment Status:</strong> 
+                                        {% if session.payment_status == 'paid' %}
+                                            <span class="badge bg-success">Paid</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% endif %}
+                                    </p>
+                                    <div class="d-grid gap-2">
+                                        {% if session.status == 'scheduled' or session.status == 'active' %}
+                                            <a href="{{ url_for('video_call', session_id=session.session_id) }}" class="btn btn-success btn-sm">
+                                                <i class="fas fa-video me-2"></i>Join Session
+                                            </a>
+                                            <a href="{{ url_for('chat_room', room_id=session.chat_room) }}" class="btn btn-primary btn-sm">
+                                                <i class="fas fa-comments me-2"></i>Chat
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            No upcoming sessions at the moment.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Completed Sessions</h5>
+                </div>
+                <div class="card-body">
+                    {% if completed_sessions %}
+                        {% for session in completed_sessions %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="card-title mb-0">Session with {{ session.student_name }}</h6>
+                                        <span class="badge bg-secondary">Completed</span>
+                                    </div>
+                                    <p class="card-text">
+                                        <strong>Date:</strong> {{ session.date }}<br>
+                                        <strong>Topic:</strong> {{ session.topic }}<br>
+                                        <strong>Duration:</strong> {{ session.duration }} minutes<br>
+                                        <strong>Earnings:</strong> ${{ session.cost_usd }} (₹{{ session.cost_inr }})
+                                    </p>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            No completed sessions yet.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Student Reviews</h5>
+                </div>
+                <div class="card-body">
+                    {% if reviews %}
+                        {% for review in reviews %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="card-title mb-0">{{ review.student_name }}</h6>
+                                        <div class="text-warning">
+                                            {% for i in range(5) %}
+                                                {% if i < review.rating %}
+                                                    <i class="fas fa-star"></i>
+                                                {% else %}
+                                                    <i class="far fa-star"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <p class="card-text">{{ review.comment }}</p>
+                                    <div class="text-muted small">{{ review.date }}</div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            No reviews yet.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProfileModalLabel">Edit Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="profileForm">
+                    <div class="mb-3">
+                        <label for="specialization" class="form-label">Specialization</label>
+                        <input type="text" class="form-control" id="specialization" name="specialization" value="{{ mentor.specialization }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="experience" class="form-label">Experience (years)</label>
+                        <input type="number" class="form-control" id="experience" name="experience" value="{{ mentor.experience }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="hourly_rate" class="form-label">Hourly Rate ($)</label>
+                        <input type="number" class="form-control" id="hourly_rate" name="hourly_rate" value="{{ mentor.hourly_rate }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Availability</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="monday" name="availability[]" value="Monday" {% if 'Monday' in mentor.availability %}checked{% endif %}>
+                                    <label class="form-check-label" for="monday">Monday</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="tuesday" name="availability[]" value="Tuesday" {% if 'Tuesday' in mentor.availability %}checked{% endif %}>
+                                    <label class="form-check-label" for="tuesday">Tuesday</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="wednesday" name="availability[]" value="Wednesday" {% if 'Wednesday' in mentor.availability %}checked{% endif %}>
+                                    <label class="form-check-label" for="wednesday">Wednesday</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="thursday" name="availability[]" value="Thursday" {% if 'Thursday' in mentor.availability %}checked{% endif %}>
+                                    <label class="form-check-label" for="thursday">Thursday</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="friday" name="availability[]" value="Friday" {% if 'Friday' in mentor.availability %}checked{% endif %}>
+                                    <label class="form-check-label" for="friday">Friday</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="saturday" name="availability[]" value="Saturday" {% if 'Saturday' in mentor.availability %}checked{% endif %}>
+                                    <label class="form-check-label" for="saturday">Saturday</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="sunday" name="availability[]" value="Sunday" {% if 'Sunday' in mentor.availability %}checked{% endif %}>
+                                    <label class="form-check-label" for="sunday">Sunday</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="payment_details" class="form-label">Payment Details</label>
+                        <textarea class="form-control" id="payment_details" name="payment_details" rows="3" placeholder="Bank account details, UPI ID, etc.">{{ mentor.payment_details }}</textarea>
+                        <div class="form-text">This information will be shared with students when they make a payment.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveProfile">
+                    <i class="fas fa-save me-2"></i>Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Accept Request Modal -->
+<div class="modal fade" id="acceptRequestModal" tabindex="-1" aria-labelledby="acceptRequestModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="acceptRequestModalLabel">Accept Mentorship Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="acceptRequestForm">
+                    <input type="hidden" id="accept_session_id" name="session_id">
+                    
+                    <div class="mb-3">
+                        <label for="payment_details" class="form-label">Payment Details</label>
+                        <textarea class="form-control" id="accept_payment_details" name="payment_details" rows="3" placeholder="Bank account details, UPI ID, etc.">{{ mentor.payment_details }}</textarea>
+                        <div class="form-text">This information will be shared with the student when they make a payment.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmAccept">
+                    <i class="fas fa-check me-2"></i>Accept Request
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed top-0 end-0 p-3"></div>
+
+{% block scripts %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Show toast notification
+    function showToast(title, message, type = 'info') {
+        const toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            // Create toast container if it doesn't exist
+            const container = document.createElement('div');
+            container.className = 'toast-container position-fixed top-0 end-0 p-3';
+            document.body.appendChild(container);
+        }
+        
+        const toastEl = document.createElement('div');
+        toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
+        toastEl.setAttribute('role', 'alert');
+        toastEl.setAttribute('aria-live', 'assertive');
+        toastEl.setAttribute('aria-atomic', 'true');
+        
+        const toastContent = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>${title}</strong>: ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        
+        toastEl.innerHTML = toastContent;
+        document.querySelector('.toast-container').appendChild(toastEl);
+        
+        const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+        toast.show();
+    }
+
+    // Initialize charts
+    function initializeCharts() {
+        // Earnings Chart
+        const earningsCtx = document.getElementById('earningsChart').getContext('2d');
+        const earningsChart = new Chart(earningsCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                datasets: [{
+                    label: 'Monthly Earnings ($)',
+                    data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value;
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        // Rating Chart
+        const ratingCtx = document.getElementById('ratingChart').getContext('2d');
+        const ratingChart = new Chart(ratingCtx, {
+            type: 'bar',
+            data: {
+                labels: ['5★', '4★', '3★', '2★', '1★'],
+                datasets: [{
+                    label: 'Number of Reviews',
+                    data: [0, 0, 0, 0, 0],
+                    backgroundColor: [
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(255, 159, 64, 0.7)',
+                        'rgba(255, 99, 132, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(255, 99, 132, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        return { earningsChart, ratingChart };
+    }
+    
+    // Update charts with data
+    function updateCharts(charts, sessions, reviews) {
+        // Calculate earnings by month
+        const monthlyEarnings = Array(12).fill(0);
+        let totalEarnings = 0;
+        let currentMonthEarnings = 0;
+        const currentMonth = new Date().getMonth();
+        
+        sessions.forEach(session => {
+            if (session.payment_status === 'paid') {
+                const sessionDate = new Date(session.created_at);
+                const month = sessionDate.getMonth();
+                const amount = session.cost_usd;
+                
+                monthlyEarnings[month] += amount;
+                totalEarnings += amount;
+                
+                if (month === currentMonth) {
+                    currentMonthEarnings += amount;
+                }
+            }
+        });
+        
+        // Update earnings chart
+        charts.earningsChart.data.datasets[0].data = monthlyEarnings;
+        charts.earningsChart.update();
+        
+        // Update earnings totals
+        document.getElementById('totalEarnings').textContent = totalEarnings.toFixed(2);
+        document.getElementById('monthlyEarnings').textContent = currentMonthEarnings.toFixed(2);
+        
+        // Calculate ratings distribution
+        const ratingCounts = [0, 0, 0, 0, 0]; // 5★, 4★, 3★, 2★, 1★
+        
+        reviews.forEach(review => {
+            const rating = Math.round(review.rating);
+            if (rating >= 1 && rating <= 5) {
+                ratingCounts[5 - rating]++;
+            }
+        });
+        
+        // Update rating chart
+        charts.ratingChart.data.datasets[0].data = ratingCounts;
+        charts.ratingChart.update();
+        
+        // Update review count
+        document.getElementById('reviewCount').textContent = reviews.length;
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize charts
+        const charts = initializeCharts();
+        
+        // Sample data for demonstration
+        const completedSessions = [
+            {% for session in completed_sessions %}
+            {
+                created_at: "{{ session.created_at }}",
+                cost_usd: {{ session.cost_usd }},
+                payment_status: "paid"
+            },
+            {% endfor %}
+            {% for session in active_sessions %}
+            {% if session.payment_status == 'paid' %}
+            {
+                created_at: "{{ session.created_at }}",
+                cost_usd: {{ session.cost_usd }},
+                payment_status: "paid"
+            },
+            {% endif %}
+            {% endfor %}
+        ];
+        
+        // Sample reviews data
+        const reviews = [
+            { rating: 5, comment: "Excellent mentor!" },
+            { rating: 5, comment: "Very helpful and knowledgeable." },
+            { rating: 4, comment: "Good explanations and patient." },
+            { rating: 5, comment: "Helped me understand difficult concepts." },
+            { rating: 3, comment: "Decent explanations but sometimes rushed." }
+        ];
+        
+        // Update charts with data
+        updateCharts(charts, completedSessions, reviews);
+        // Accept Request
+        const acceptButtons = document.querySelectorAll('.accept-request');
+        const acceptRequestForm = document.getElementById('acceptRequestForm');
+        const acceptSessionIdInput = document.getElementById('accept_session_id');
+        const acceptPaymentDetailsInput = document.getElementById('accept_payment_details');
+        const confirmAcceptButton = document.getElementById('confirmAccept');
+        
+        acceptButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const sessionId = this.getAttribute('data-session-id');
+                acceptSessionIdInput.value = sessionId;
+                
+                // Show modal
+                const acceptModal = new bootstrap.Modal(document.getElementById('acceptRequestModal'));
+                acceptModal.show();
+            });
+        });
+        
+        confirmAcceptButton.addEventListener('click', function() {
+            // Disable button and show loading state
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+            
+            // Get form data
+            const formData = new FormData(acceptRequestForm);
+            
+            // Send request
+            fetch('/mentorship/accept', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Hide modal
+                    const acceptModal = bootstrap.Modal.getInstance(document.getElementById('acceptRequestModal'));
+                    acceptModal.hide();
+                    
+                    // Show success message
+                    showToast('Success', 'Mentorship request accepted successfully!', 'success');
+                    
+                    // Reload page after a delay
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    showToast('Error', data.error || 'Failed to accept request', 'danger');
+                    
+                    // Reset button state
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-check me-2"></i>Accept Request';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Error', 'An error occurred. Please try again.', 'danger');
+                
+                // Reset button state
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-check me-2"></i>Accept Request';
+            });
+        });
+        
+        // Reject Request
+        const rejectButtons = document.querySelectorAll('.reject-request');
+        
+        rejectButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const sessionId = this.getAttribute('data-session-id');
+                
+                if (confirm('Are you sure you want to reject this request?')) {
+                    // Disable button and show loading state
+                    this.disabled = true;
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+                    
+                    // Create form data
+                    const formData = new FormData();
+                    formData.append('session_id', sessionId);
+                    
+                    // Send request
+                    fetch('/mentorship/reject', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Show success message
+                            showToast('Success', 'Mentorship request rejected.', 'success');
+                            
+                            // Reload page after a delay
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 2000);
+                        } else {
+                            showToast('Error', data.error || 'Failed to reject request', 'danger');
+                            
+                            // Reset button state
+                            this.disabled = false;
+                            this.innerHTML = '<i class="fas fa-times me-1"></i>Reject';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showToast('Error', 'An error occurred. Please try again.', 'danger');
+                        
+                        // Reset button state
+                        this.disabled = false;
+                        this.innerHTML = '<i class="fas fa-times me-1"></i>Reject';
+                    });
+                }
+            });
+        });
+        
+        // Save Profile
+        const profileForm = document.getElementById('profileForm');
+        const saveProfileButton = document.getElementById('saveProfile');
+        
+        saveProfileButton.addEventListener('click', function() {
+            // Disable button and show loading state
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+            
+            // Get form data
+            const formData = new FormData(profileForm);
+            
+            // Send request
+            fetch('/mentor/update-profile', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Hide modal
+                    const profileModal = bootstrap.Modal.getInstance(document.getElementById('editProfileModal'));
+                    profileModal.hide();
+                    
+                    // Show success message
+                    showToast('Success', 'Profile updated successfully!', 'success');
+                    
+                    // Reload page after a delay
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    showToast('Error', data.error || 'Failed to update profile', 'danger');
+                    
+                    // Reset button state
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-save me-2"></i>Save Changes';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Error', 'An error occurred. Please try again.', 'danger');
+                
+                // Reset button state
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-save me-2"></i>Save Changes';
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

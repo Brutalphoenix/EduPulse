@@ -1,0 +1,631 @@
+{% extends 'layout.html' %}
+
+{% block title %}EduPulse - Video Call{% endblock %}
+
+{% block styles %}
+<style>
+    .video-container {
+        height: calc(100vh - 250px);
+        min-height: 500px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .video-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        height: 100%;
+    }
+    
+    .video-item {
+        position: relative;
+        background-color: #000;
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    
+    .video-item video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .video-item .video-label {
+        position: absolute;
+        bottom: 1rem;
+        left: 1rem;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+    
+    .video-controls {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .control-button {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+    
+    .end-call {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .mute-audio, .disable-video, .share-screen {
+        background-color: #6c757d;
+        color: white;
+    }
+    
+    .mute-audio.active, .disable-video.active, .share-screen.active {
+        background-color: #0d6efd;
+    }
+    
+    .local-video-container {
+        position: relative;
+        height: 100%;
+    }
+    
+    .remote-video-container {
+        position: relative;
+        height: 100%;
+    }
+    
+    #localVideo, #remoteVideo {
+        background-color: #343a40;
+    }
+    
+    .connection-status {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        z-index: 10;
+    }
+    
+    .waiting-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        z-index: 5;
+    }
+    
+    .waiting-overlay i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+        .video-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .video-item {
+            height: 50%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        {% if session.get('role') == 'student' %}
+                            Video Call with {{ session_data.mentor_name }}
+                        {% else %}
+                            Video Call with {{ session_data.student_name }}
+                        {% endif %}
+                    </h5>
+                    <div>
+                        <a href="{{ url_for('chat_room', room_id=session_data.chat_room) }}" class="btn btn-light btn-sm">
+                            <i class="fas fa-comments me-2"></i>Open Chat
+                        </a>
+                        {% if session.get('role') == 'student' %}
+                            <a href="{{ url_for('student_dashboard') }}" class="btn btn-light btn-sm ms-2">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('mentor_dashboard') }}" class="btn btn-light btn-sm ms-2">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="video-container">
+                        <div class="connection-status" id="connectionStatus">
+                            <i class="fas fa-circle text-warning me-2"></i>Connecting...
+                        </div>
+                        
+                        <div class="video-grid">
+                            <div class="video-item local-video-container">
+                                <video id="localVideo" autoplay muted playsinline></video>
+                                <div class="video-label">You</div>
+                                <div class="waiting-overlay" id="waitingOverlay">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <h4>Waiting for the other participant...</h4>
+                                    <p>Please stay on this page</p>
+                                </div>
+                            </div>
+                            <div class="video-item remote-video-container">
+                                <video id="remoteVideo" autoplay playsinline></video>
+                                <div class="video-label">
+                                    {% if session.get('role') == 'student' %}
+                                        {{ session_data.mentor_name }}
+                                    {% else %}
+                                        {{ session_data.student_name }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="video-controls">
+                            <button class="btn control-button mute-audio" id="muteAudioButton" title="Mute Audio">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                            <button class="btn control-button disable-video" id="disableVideoButton" title="Disable Video">
+                                <i class="fas fa-video"></i>
+                            </button>
+                            <button class="btn control-button share-screen" id="shareScreenButton" title="Share Screen">
+                                <i class="fas fa-desktop"></i>
+                            </button>
+                            <button class="btn control-button end-call" id="endCallButton" title="End Call">
+                                <i class="fas fa-phone-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Session Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Topic:</strong> {{ session_data.topic }}</p>
+                            <p><strong>Date:</strong> {{ session_data.date }}</p>
+                            <p><strong>Time:</strong> {{ session_data.time }}</p>
+                            <p><strong>Duration:</strong> {{ session_data.duration }} minutes</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong> 
+                                <span class="badge bg-success">Active</span>
+                            </p>
+                            <p><strong>Session ID:</strong> {{ session_data.session_id }}</p>
+                            {% if session.get('role') == 'student' %}
+                                <p><strong>Mentor:</strong> {{ session_data.mentor_name }}</p>
+                            {% else %}
+                                <p><strong>Student:</strong> {{ session_data.student_name }}</p>
+                            {% endif %}
+                            <p><strong>Cost:</strong> ${{ session_data.cost }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const socket = io();
+        const sessionId = "{{ session_data.session_id }}";
+        const room = "video_" + sessionId;
+        const username = "{{ session.get('name') }}";
+        
+        const localVideo = document.getElementById('localVideo');
+        const remoteVideo = document.getElementById('remoteVideo');
+        const muteAudioButton = document.getElementById('muteAudioButton');
+        const disableVideoButton = document.getElementById('disableVideoButton');
+        const shareScreenButton = document.getElementById('shareScreenButton');
+        const endCallButton = document.getElementById('endCallButton');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const waitingOverlay = document.getElementById('waitingOverlay');
+        
+        let localStream;
+        let remoteStream;
+        let peerConnection;
+        let isAudioMuted = false;
+        let isVideoDisabled = false;
+        let isScreenSharing = false;
+        let screenStream;
+        
+        const iceServers = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' }
+            ]
+        };
+        
+        // Initialize WebRTC
+        async function initWebRTC() {
+            try {
+                // Get local media stream
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                
+                // Display local video
+                localVideo.srcObject = localStream;
+                
+                // Join room
+                socket.emit('join_video', { room: room });
+                
+                // Update connection status
+                updateConnectionStatus('waiting');
+                
+                // Initialize peer connection
+                createPeerConnection();
+                
+                // Add local stream to peer connection
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+            } catch (error) {
+                console.error('Error initializing WebRTC:', error);
+                showToast('Error', 'Failed to access camera and microphone. Please check your permissions.', 'danger');
+            }
+        }
+        
+        // Create peer connection
+        function createPeerConnection() {
+            peerConnection = new RTCPeerConnection(iceServers);
+            
+            // Handle ICE candidates
+            peerConnection.onicecandidate = event => {
+                if (event.candidate) {
+                    socket.emit('ice_candidate', {
+                        room: room,
+                        candidate: event.candidate
+                    });
+                }
+            };
+            
+            // Handle connection state changes
+            peerConnection.onconnectionstatechange = event => {
+                switch(peerConnection.connectionState) {
+                    case 'connected':
+                        updateConnectionStatus('connected');
+                        waitingOverlay.style.display = 'none';
+                        break;
+                    case 'disconnected':
+                    case 'failed':
+                        updateConnectionStatus('disconnected');
+                        break;
+                    case 'closed':
+                        updateConnectionStatus('closed');
+                        break;
+                }
+            };
+            
+            // Handle remote stream
+            peerConnection.ontrack = event => {
+                remoteStream = event.streams[0];
+                remoteVideo.srcObject = remoteStream;
+                waitingOverlay.style.display = 'none';
+            };
+        }
+        
+        // Create and send offer
+        async function createOffer() {
+            try {
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                
+                socket.emit('offer', {
+                    room: room,
+                    offer: offer
+                });
+            } catch (error) {
+                console.error('Error creating offer:', error);
+            }
+        }
+        
+        // Handle received offer
+        async function handleOffer(offer) {
+            try {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+                
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                
+                socket.emit('answer', {
+                    room: room,
+                    answer: answer
+                });
+            } catch (error) {
+                console.error('Error handling offer:', error);
+            }
+        }
+        
+        // Handle received answer
+        async function handleAnswer(answer) {
+            try {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+            } catch (error) {
+                console.error('Error handling answer:', error);
+            }
+        }
+        
+        // Handle received ICE candidate
+        async function handleIceCandidate(candidate) {
+            try {
+                await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+            } catch (error) {
+                console.error('Error handling ICE candidate:', error);
+            }
+        }
+        
+        // Update connection status
+        function updateConnectionStatus(status) {
+            switch(status) {
+                case 'waiting':
+                    connectionStatus.innerHTML = '<i class="fas fa-circle text-warning me-2"></i>Waiting for connection...';
+                    break;
+                case 'connecting':
+                    connectionStatus.innerHTML = '<i class="fas fa-circle text-warning me-2"></i>Connecting...';
+                    break;
+                case 'connected':
+                    connectionStatus.innerHTML = '<i class="fas fa-circle text-success me-2"></i>Connected';
+                    break;
+                case 'disconnected':
+                    connectionStatus.innerHTML = '<i class="fas fa-circle text-danger me-2"></i>Disconnected';
+                    break;
+                case 'closed':
+                    connectionStatus.innerHTML = '<i class="fas fa-circle text-secondary me-2"></i>Call Ended';
+                    break;
+            }
+        }
+        
+        // Toggle audio
+        function toggleAudio() {
+            if (localStream) {
+                const audioTracks = localStream.getAudioTracks();
+                if (audioTracks.length > 0) {
+                    isAudioMuted = !isAudioMuted;
+                    audioTracks[0].enabled = !isAudioMuted;
+                    
+                    if (isAudioMuted) {
+                        muteAudioButton.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+                        muteAudioButton.classList.add('active');
+                    } else {
+                        muteAudioButton.innerHTML = '<i class="fas fa-microphone"></i>';
+                        muteAudioButton.classList.remove('active');
+                    }
+                }
+            }
+        }
+        
+        // Toggle video
+        function toggleVideo() {
+            if (localStream) {
+                const videoTracks = localStream.getVideoTracks();
+                if (videoTracks.length > 0) {
+                    isVideoDisabled = !isVideoDisabled;
+                    videoTracks[0].enabled = !isVideoDisabled;
+                    
+                    if (isVideoDisabled) {
+                        disableVideoButton.innerHTML = '<i class="fas fa-video-slash"></i>';
+                        disableVideoButton.classList.add('active');
+                    } else {
+                        disableVideoButton.innerHTML = '<i class="fas fa-video"></i>';
+                        disableVideoButton.classList.remove('active');
+                    }
+                }
+            }
+        }
+        
+        // Toggle screen sharing
+        async function toggleScreenSharing() {
+            if (!isScreenSharing) {
+                try {
+                    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                    
+                    // Replace video track with screen track
+                    const videoTrack = screenStream.getVideoTracks()[0];
+                    const sender = peerConnection.getSenders().find(s => s.track.kind === 'video');
+                    sender.replaceTrack(videoTrack);
+                    
+                    // Update local video
+                    localVideo.srcObject = screenStream;
+                    
+                    // Update button
+                    shareScreenButton.innerHTML = '<i class="fas fa-desktop"></i>';
+                    shareScreenButton.classList.add('active');
+                    isScreenSharing = true;
+                    
+                    // Handle screen sharing end
+                    videoTrack.onended = async () => {
+                        await stopScreenSharing();
+                    };
+                } catch (error) {
+                    console.error('Error starting screen sharing:', error);
+                    showToast('Error', 'Failed to start screen sharing.', 'danger');
+                }
+            } else {
+                await stopScreenSharing();
+            }
+        }
+        
+        // Stop screen sharing
+        async function stopScreenSharing() {
+            if (screenStream) {
+                screenStream.getTracks().forEach(track => track.stop());
+                
+                // Replace screen track with camera track
+                const videoTrack = localStream.getVideoTracks()[0];
+                const sender = peerConnection.getSenders().find(s => s.track.kind === 'video');
+                sender.replaceTrack(videoTrack);
+                
+                // Update local video
+                localVideo.srcObject = localStream;
+                
+                // Update button
+                shareScreenButton.innerHTML = '<i class="fas fa-desktop"></i>';
+                shareScreenButton.classList.remove('active');
+                isScreenSharing = false;
+            }
+        }
+        
+        // End call
+        function endCall() {
+            if (confirm('Are you sure you want to end the call?')) {
+                // Close peer connection
+                if (peerConnection) {
+                    peerConnection.close();
+                }
+                
+                // Stop local stream
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                }
+                
+                // Stop screen sharing
+                if (screenStream) {
+                    screenStream.getTracks().forEach(track => track.stop());
+                }
+                
+                // Emit end call event
+                socket.emit('end_call', { room: room });
+                
+                // Update connection status
+                updateConnectionStatus('closed');
+                
+                // Redirect to dashboard
+                if (session.get('role') === 'student') {
+                    window.location.href = "{{ url_for('student_dashboard') }}";
+                } else {
+                    window.location.href = "{{ url_for('mentor_dashboard') }}";
+                }
+            }
+        }
+        
+        // Socket event handlers
+        socket.on('user_joined', data => {
+            console.log('User joined:', data.user);
+            updateConnectionStatus('connecting');
+            createOffer();
+        });
+        
+        socket.on('user_left', data => {
+            console.log('User left:', data.user);
+            updateConnectionStatus('disconnected');
+            waitingOverlay.style.display = 'flex';
+            waitingOverlay.innerHTML = `
+                <i class="fas fa-user-slash"></i>
+                <h4>The other participant has left the call</h4>
+                <p>You can wait for them to rejoin or end the call</p>
+            `;
+        });
+        
+        socket.on('offer', data => {
+            handleOffer(data.offer);
+        });
+        
+        socket.on('answer', data => {
+            handleAnswer(data.answer);
+        });
+        
+        socket.on('ice_candidate', data => {
+            handleIceCandidate(data.candidate);
+        });
+        
+        socket.on('call_ended', data => {
+            showToast('Call Ended', 'The call has been ended by the other participant.', 'info');
+            
+            // Close peer connection
+            if (peerConnection) {
+                peerConnection.close();
+            }
+            
+            // Stop local stream
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            
+            // Stop screen sharing
+            if (screenStream) {
+                screenStream.getTracks().forEach(track => track.stop());
+            }
+            
+            // Update connection status
+            updateConnectionStatus('closed');
+            
+            // Redirect to dashboard after a delay
+            setTimeout(() => {
+                if (session.get('role') === 'student') {
+                    window.location.href = "{{ url_for('student_dashboard') }}";
+                } else {
+                    window.location.href = "{{ url_for('mentor_dashboard') }}";
+                }
+            }, 3000);
+        });
+        
+        // Button event listeners
+        muteAudioButton.addEventListener('click', toggleAudio);
+        disableVideoButton.addEventListener('click', toggleVideo);
+        shareScreenButton.addEventListener('click', toggleScreenSharing);
+        endCallButton.addEventListener('click', endCall);
+        
+        // Initialize WebRTC
+        initWebRTC();
+        
+        // Handle page unload
+        window.addEventListener('beforeunload', function(e) {
+            // Emit leave event
+            socket.emit('leave_video', { room: room });
+            
+            // Close peer connection
+            if (peerConnection) {
+                peerConnection.close();
+            }
+            
+            // Stop local stream
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            
+            // Stop screen sharing
+            if (screenStream) {
+                screenStream.getTracks().forEach(track => track.stop());
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

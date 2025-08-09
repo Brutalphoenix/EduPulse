@@ -1,0 +1,196 @@
+{% extends 'layout.html' %}
+
+{% block title %}EduPulse - Sign Up{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="card-title mb-0">Create an Account</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form id="signupForm" method="post" action="{{ url_for('signup') }}">
+                        {% if csrf_token is defined %}
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {% else %}
+                        <input type="hidden" name="csrf_token" value="demo-token">
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label for="role" class="form-label">I am a:</label>
+                            <select class="form-select" id="role" name="role" required>
+                                <option value="" selected disabled>Select your role</option>
+                                <option value="student">Student</option>
+                                <option value="mentor">Mentor</option>
+                            </select>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                        </div>
+                        
+                        <!-- Student-specific fields -->
+                        <div id="studentFields" style="display: none;">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="department" class="form-label">Department</label>
+                                    <select class="form-select" id="department" name="department">
+                                        <option value="Computer Science">Computer Science</option>
+                                        <option value="Engineering">Engineering</option>
+                                        <option value="Business">Business</option>
+                                        <option value="Arts">Arts</option>
+                                        <option value="Science">Science</option>
+                                        <option value="Medicine">Medicine</option>
+                                        <option value="Law">Law</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="year" class="form-label">Year of Study</label>
+                                    <select class="form-select" id="year" name="year">
+                                        <option value="1">1st Year</option>
+                                        <option value="2">2nd Year</option>
+                                        <option value="3">3rd Year</option>
+                                        <option value="4">4th Year</option>
+                                        <option value="5">5th Year</option>
+                                        <option value="6">6th Year</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Mentor-specific fields -->
+                        <div id="mentorFields" style="display: none;">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="specialization" class="form-label">Specialization</label>
+                                    <select class="form-select" id="specialization" name="specialization">
+                                        <option value="Computer Science">Computer Science</option>
+                                        <option value="Engineering">Engineering</option>
+                                        <option value="Business">Business</option>
+                                        <option value="Arts">Arts</option>
+                                        <option value="Science">Science</option>
+                                        <option value="Medicine">Medicine</option>
+                                        <option value="Law">Law</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="experience" class="form-label">Years of Experience</label>
+                                    <input type="number" class="form-control" id="experience" name="experience" min="0" value="0">
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="hourly_rate" class="form-label">Hourly Rate ($)</label>
+                                    <input type="number" class="form-control" id="hourly_rate" name="hourly_rate" min="0" step="0.01" value="50.00">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Availability</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="availability" value="Monday" id="monday">
+                                        <label class="form-check-label" for="monday">Monday</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="availability" value="Tuesday" id="tuesday">
+                                        <label class="form-check-label" for="tuesday">Tuesday</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="availability" value="Wednesday" id="wednesday">
+                                        <label class="form-check-label" for="wednesday">Wednesday</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="availability" value="Thursday" id="thursday">
+                                        <label class="form-check-label" for="thursday">Thursday</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="availability" value="Friday" id="friday">
+                                        <label class="form-check-label" for="friday">Friday</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="availability" value="Saturday" id="saturday">
+                                        <label class="form-check-label" for="saturday">Saturday</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="availability" value="Sunday" id="sunday">
+                                        <label class="form-check-label" for="sunday">Sunday</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-user-plus me-2"></i>Create Account
+                            </button>
+                            <a href="{{ url_for('login') }}" class="btn btn-outline-secondary">
+                                Already have an account? Login
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const roleSelect = document.getElementById('role');
+        const studentFields = document.getElementById('studentFields');
+        const mentorFields = document.getElementById('mentorFields');
+        
+        // Show/hide role-specific fields based on selection
+        roleSelect.addEventListener('change', function() {
+            if (this.value === 'student') {
+                studentFields.style.display = 'block';
+                mentorFields.style.display = 'none';
+            } else if (this.value === 'mentor') {
+                studentFields.style.display = 'none';
+                mentorFields.style.display = 'block';
+            } else {
+                studentFields.style.display = 'none';
+                mentorFields.style.display = 'none';
+            }
+        });
+        
+        // Form validation
+        const signupForm = document.getElementById('signupForm');
+        signupForm.addEventListener('submit', function(e) {
+            const role = roleSelect.value;
+            
+            if (role === 'mentor') {
+                const availability = document.querySelectorAll('input[name="availability"]:checked');
+                if (availability.length === 0) {
+                    e.preventDefault();
+                    alert('Please select at least one day of availability');
+                    return false;
+                }
+            }
+            
+            return true;
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

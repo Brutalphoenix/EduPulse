@@ -1,0 +1,108 @@
+{% extends 'layout.html' %}
+
+{% block title %}EduPulse - Login{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="card-title mb-0">Login to EduPulse</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form id="loginForm" method="post" action="{{ url_for('login') }}">
+                        {% if csrf_token is defined %}
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {% else %}
+                        <input type="hidden" name="csrf_token" value="demo-token">
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                <input type="text" class="form-control" id="username" name="username" required autofocus>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>Login
+                            </button>
+                            <a href="{{ url_for('signup') }}" class="btn btn-success btn-lg">
+                                <i class="fas fa-user-plus me-2"></i>Sign Up
+                            </a>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer bg-light p-3 text-center">
+                    <p class="mb-0">For demo purposes, use any username and password</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    // Validate login form
+    function validateLoginForm() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+        
+        if (!username) {
+            showLoginError('Missing required field: username');
+            return false;
+        }
+        
+        if (!password) {
+            showLoginError('Missing required field: password');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    // Show login error message
+    function showLoginError(message) {
+        // Remove existing error container if any
+        const existingError = document.getElementById('loginErrorContainer');
+        if (existingError) {
+            existingError.remove();
+        }
+        
+        // Create error container
+        const errorContainer = document.createElement('div');
+        errorContainer.id = 'loginErrorContainer';
+        errorContainer.className = 'alert alert-danger mt-3';
+        errorContainer.setAttribute('role', 'alert');
+        errorContainer.innerHTML = `<i class="fas fa-exclamation-circle me-2"></i>${message}`;
+        
+        // Insert after form header
+        const cardHeader = document.querySelector('.card-header');
+        cardHeader.insertAdjacentElement('afterend', errorContainer);
+    }
+    
+    // Add form validation on submit
+    document.addEventListener('DOMContentLoaded', function() {
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', function(e) {
+                if (!validateLoginForm()) {
+                    e.preventDefault();
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

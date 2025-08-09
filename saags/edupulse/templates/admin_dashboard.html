@@ -1,0 +1,490 @@
+{% extends 'layout.html' %}
+
+{% block title %}EduPulse - Admin Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    .stat-card {
+        border-radius: 10px;
+        transition: transform 0.3s;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stat-icon {
+        font-size: 2.5rem;
+        opacity: 0.8;
+    }
+    
+    .chart-container {
+        position: relative;
+        margin: auto;
+        height: 250px;
+    }
+    
+    .table-responsive {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .risk-high {
+        background-color: rgba(255, 99, 132, 0.2);
+        border-left: 4px solid rgba(255, 99, 132, 1);
+    }
+    
+    .risk-medium {
+        background-color: rgba(255, 206, 86, 0.2);
+        border-left: 4px solid rgba(255, 206, 86, 1);
+    }
+    
+    .risk-low {
+        background-color: rgba(75, 192, 192, 0.2);
+        border-left: 4px solid rgba(75, 192, 192, 1);
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Admin Dashboard</h5>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Welcome, {{ session.get('name') }}! Manage your educational platform and monitor student risk levels.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-4 mb-md-0">
+            <div class="card shadow-sm stat-card bg-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Total Students</h6>
+                            <h2 class="card-title mb-0">{{ total_students }}</h2>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4 mb-md-0">
+            <div class="card shadow-sm stat-card bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Total Mentors</h6>
+                            <h2 class="card-title mb-0">{{ total_mentors }}</h2>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4 mb-md-0">
+            <div class="card shadow-sm stat-card bg-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Total Sessions</h6>
+                            <h2 class="card-title mb-0">{{ total_sessions }}</h2>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-video"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card shadow-sm stat-card bg-warning text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Total Revenue</h6>
+                            <h2 class="card-title mb-0">${{ total_revenue|round(2) }}</h2>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-4 mb-md-0">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Student Risk Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="riskChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Session Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="sessionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activities -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Recent Activities</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Student</th>
+                                    <th>Mentor</th>
+                                    <th>Activity</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activity in recent_activities %}
+                                <tr>
+                                    <td>{{ activity.created_at }}</td>
+                                    <td>{{ activity.student_name }}</td>
+                                    <td>{{ activity.mentor_name }}</td>
+                                    <td>Mentorship Session: {{ activity.topic }}</td>
+                                    <td>
+                                        {% if activity.status == 'pending_approval' %}
+                                        <span class="badge bg-warning">Pending Approval</span>
+                                        {% elif activity.status == 'approved' %}
+                                        <span class="badge bg-info">Approved</span>
+                                        {% elif activity.status == 'scheduled' %}
+                                        <span class="badge bg-primary">Scheduled</span>
+                                        {% elif activity.status == 'active' %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% elif activity.status == 'completed' %}
+                                        <span class="badge bg-secondary">Completed</span>
+                                        {% elif activity.status == 'rejected' %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Students and Mentors Tabs -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <ul class="nav nav-tabs card-header-tabs" id="userTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button" role="tab" aria-controls="students" aria-selected="true">Students</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="mentors-tab" data-bs-toggle="tab" data-bs-target="#mentors" type="button" role="tab" aria-controls="mentors" aria-selected="false">Mentors</button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="userTabsContent">
+                        <!-- Students Tab -->
+                        <div class="tab-pane fade show active" id="students" role="tabpanel" aria-labelledby="students-tab">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Name</th>
+                                            <th>Email</th>
+                                            <th>Risk Level</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for student in students %}
+                                        <tr>
+                                            <td>{{ student.student_id }}</td>
+                                            <td>{{ student.name }}</td>
+                                            <td>{{ student.email }}</td>
+                                            <td>
+                                                {% if student.risk_level == 'High' %}
+                                                <span class="badge bg-danger">High Risk</span>
+                                                {% elif student.risk_level == 'Medium' %}
+                                                <span class="badge bg-warning">Medium Risk</span>
+                                                {% else %}
+                                                <span class="badge bg-success">Low Risk</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary view-student" data-student-id="{{ student.student_id }}">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger delete-student" data-student-id="{{ student.student_id }}">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Mentors Tab -->
+                        <div class="tab-pane fade" id="mentors" role="tabpanel" aria-labelledby="mentors-tab">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Name</th>
+                                            <th>Specialization</th>
+                                            <th>Experience</th>
+                                            <th>Rating</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for mentor in mentors %}
+                                        <tr>
+                                            <td>{{ mentor.mentor_id }}</td>
+                                            <td>{{ mentor.name }}</td>
+                                            <td>{{ mentor.specialization }}</td>
+                                            <td>{{ mentor.experience }} years</td>
+                                            <td>
+                                                <div class="text-warning">
+                                                    {% for i in range(5) %}
+                                                        {% if i < mentor.rating|int %}
+                                                            <i class="fas fa-star"></i>
+                                                        {% elif i < mentor.rating and i >= mentor.rating|int %}
+                                                            <i class="fas fa-star-half-alt"></i>
+                                                        {% else %}
+                                                            <i class="far fa-star"></i>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                    {{ mentor.rating|default(4.0) }}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary view-mentor" data-mentor-id="{{ mentor.mentor_id }}">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger delete-mentor" data-mentor-id="{{ mentor.mentor_id }}">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed top-0 end-0 p-3"></div>
+
+{% block scripts %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Show toast notification
+    function showToast(title, message, type = 'info') {
+        const toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            // Create toast container if it doesn't exist
+            const container = document.createElement('div');
+            container.className = 'toast-container position-fixed top-0 end-0 p-3';
+            document.body.appendChild(container);
+        }
+        
+        const toastEl = document.createElement('div');
+        toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
+        toastEl.setAttribute('role', 'alert');
+        toastEl.setAttribute('aria-live', 'assertive');
+        toastEl.setAttribute('aria-atomic', 'true');
+        
+        const toastContent = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>${title}</strong>: ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        
+        toastEl.innerHTML = toastContent;
+        document.querySelector('.toast-container').appendChild(toastEl);
+        
+        const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+        toast.show();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Risk Distribution Chart
+        const riskCtx = document.getElementById('riskChart').getContext('2d');
+        const riskChart = new Chart(riskCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['High Risk', 'Medium Risk', 'Low Risk'],
+                datasets: [{
+                    data: [{{ high_risk_count }}, {{ medium_risk_count }}, {{ low_risk_count }}],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+        
+        // Session Status Chart
+        const sessionCtx = document.getElementById('sessionChart').getContext('2d');
+        const sessionChart = new Chart(sessionCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Pending', 'Active', 'Completed'],
+                datasets: [{
+                    label: 'Number of Sessions',
+                    data: [{{ pending_sessions }}, {{ active_sessions }}, {{ completed_sessions }}],
+                    backgroundColor: [
+                        'rgba(255, 159, 64, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(153, 102, 255, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(153, 102, 255, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        // View Student
+        const viewStudentButtons = document.querySelectorAll('.view-student');
+        
+        viewStudentButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const studentId = this.getAttribute('data-student-id');
+                showToast('Info', `Viewing student ${studentId} details`, 'info');
+                // In a real app, this would open a modal with student details
+            });
+        });
+        
+        // Delete Student
+        const deleteStudentButtons = document.querySelectorAll('.delete-student');
+        
+        deleteStudentButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const studentId = this.getAttribute('data-student-id');
+                
+                if (confirm(`Are you sure you want to delete student ${studentId}?`)) {
+                    // In a real app, this would send a request to delete the student
+                    showToast('Success', `Student ${studentId} deleted successfully`, 'success');
+                }
+            });
+        });
+        
+        // View Mentor
+        const viewMentorButtons = document.querySelectorAll('.view-mentor');
+        
+        viewMentorButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const mentorId = this.getAttribute('data-mentor-id');
+                showToast('Info', `Viewing mentor ${mentorId} details`, 'info');
+                // In a real app, this would open a modal with mentor details
+            });
+        });
+        
+        // Delete Mentor
+        const deleteMentorButtons = document.querySelectorAll('.delete-mentor');
+        
+        deleteMentorButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const mentorId = this.getAttribute('data-mentor-id');
+                
+                if (confirm(`Are you sure you want to delete mentor ${mentorId}?`)) {
+                    // In a real app, this would send a request to delete the mentor
+                    showToast('Success', `Mentor ${mentorId} deleted successfully`, 'success');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

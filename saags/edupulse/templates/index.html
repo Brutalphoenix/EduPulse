@@ -1,0 +1,179 @@
+{% extends 'layout.html' %}
+
+{% block title %}EduPulse - Student Dropout Risk Prediction{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <h1 class="display-4 fw-bold text-primary mb-4">EduPulse</h1>
+            <p class="lead mb-4">A student dropout risk prediction and sentiment analysis platform designed to help educational institutions identify at-risk students and provide timely interventions.</p>
+            
+            <div class="d-grid gap-3 d-sm-flex justify-content-sm-center mb-5">
+                {% if not session.get('user') %}
+                <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg px-4 gap-3">
+                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                </a>
+                {% endif %}
+                <a href="#features" class="btn btn-outline-secondary btn-lg px-4">
+                    <i class="fas fa-info-circle me-2"></i>Learn More
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    <div class="row g-0">
+                        <div class="col-md-6 d-flex align-items-center">
+                            <div class="p-4 p-md-5">
+                                <h2 class="fw-bold mb-3">Predict Student Success</h2>
+                                <p class="mb-4">Our machine learning model analyzes academic metrics to identify students at risk of dropping out, allowing for early intervention and support.</p>
+                                <ul class="list-unstyled">
+                                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Attendance tracking</li>
+                                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Assignment performance</li>
+                                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Test scores analysis</li>
+                                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Behavior assessment</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="bg-primary text-white p-4 p-md-5 h-100">
+                                <h2 class="fw-bold mb-3">Analyze Student Sentiment</h2>
+                                <p class="mb-4">Our sentiment analysis tool helps understand student feedback and emotional state, providing valuable insights for improving the learning experience.</p>
+                                <ul class="list-unstyled">
+                                    <li class="mb-2"><i class="fas fa-comment-dots me-2"></i> Feedback analysis</li>
+                                    <li class="mb-2"><i class="fas fa-chart-line me-2"></i> Sentiment tracking</li>
+                                    <li class="mb-2"><i class="fas fa-lightbulb me-2"></i> Insight generation</li>
+                                    <li class="mb-2"><i class="fas fa-users me-2"></i> Group sentiment trends</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="features" class="row mb-5">
+        <div class="col-md-12 text-center mb-4">
+            <h2 class="fw-bold">Key Features</h2>
+            <p class="lead">Comprehensive tools for student success</p>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="feature-icon bg-primary text-white rounded-circle mb-3">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <h3 class="card-title h5">Risk Prediction</h3>
+                    <p class="card-text">Predict student dropout risk using machine learning algorithms based on academic performance metrics.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="feature-icon bg-primary text-white rounded-circle mb-3">
+                        <i class="fas fa-comment-alt"></i>
+                    </div>
+                    <h3 class="card-title h5">Sentiment Analysis</h3>
+                    <p class="card-text">Analyze student feedback and comments to understand sentiment and emotional response to courses.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="feature-icon bg-primary text-white rounded-circle mb-3">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <h3 class="card-title h5">Early Alerts</h3>
+                    <p class="card-text">Receive notifications for high-risk students, enabling timely intervention and support.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="feature-icon bg-primary text-white rounded-circle mb-3">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="card-title h5">Data Visualization</h3>
+                    <p class="card-text">Visualize trends and patterns in student performance and sentiment over time.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="feature-icon bg-primary text-white rounded-circle mb-3">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <h3 class="card-title h5">Admin Dashboard</h3>
+                    <p class="card-text">Comprehensive view of student risk levels, allowing administrators to monitor and manage interventions.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="feature-icon bg-primary text-white rounded-circle mb-3">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <h3 class="card-title h5">Student Dashboard</h3>
+                    <p class="card-text">Personal risk assessment and resources for students to monitor their own progress.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-body p-4 p-md-5">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="fw-bold mb-3">Ready to get started?</h2>
+                            <p class="lead mb-4">Access your dashboard and start using EduPulse today.</p>
+                            {% if not session.get('user') %}
+                            <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>Login Now
+                            </a>
+                            {% else %}
+                            <a href="{% if session.get('role') == 'student' %}{{ url_for('student_dashboard') }}{% elif session.get('role') == 'mentor' %}{{ url_for('mentor_dashboard') }}{% else %}{{ url_for('index') }}{% endif %}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
+                            </a>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="display-1 text-primary">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .feature-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+</style>
+{% endblock %}
